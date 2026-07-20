@@ -1,6 +1,7 @@
 package net.norivensuu.flux.compiler;
 
 import com.github.bogdanovmn.jaclin.CLI;
+import net.norivensuu.flux.ir.ProgramIrNode;
 import net.norivensuu.flux.visitor.IrGeneratorVisitor;
 import net.norivensuu.flux.antlr.FluxLexer;
 import net.norivensuu.flux.antlr.FluxParser;
@@ -28,18 +29,23 @@ public class FluxCompiler {
 
     public static class Program {
         public Path fileName;
+        public String packageString;
         public Set<String> imports = new HashSet<>();
         public FluxParser.ProgramContext ctx;
+        public ProgramIrNode node;
+        public FluxIr<?> ir;
 //        public JavaCodeGeneratorVisitor.JavaCode javaCode;
         public boolean precompile = false;
 
-        public Program(Path fileName, FluxParser.ProgramContext ctx) {
+        public Program(Path fileName, Path packagePath, FluxParser.ProgramContext ctx) {
             this.fileName = fileName;
+            this.packageString = packagePath.toString().substring(0, packagePath.toString().lastIndexOf("\\")).replace("\\", "/");
             this.ctx = ctx;
         }
 
-        public Program(Path fileName, FluxParser.ProgramContext ctx, boolean precompile) {
+        public Program(Path fileName, Path packagePath, FluxParser.ProgramContext ctx, boolean precompile) {
             this.fileName = fileName;
+            this.packageString = packagePath.toString().substring(0, packagePath.toString().lastIndexOf("\\")).replace("\\", "/");
             this.ctx = ctx;
             this.precompile = precompile;
         }
@@ -49,7 +55,7 @@ public class FluxCompiler {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    static void main(String[] args) throws Exception {
         new CLI("flux-compiler", "A Flux programming language to Java compiler.")
 
                 .withOptions()
@@ -120,6 +126,10 @@ public class FluxCompiler {
         try {
             FluxMetadata metadata = buildClosestMetadata(originalPath, filePath.getParent());
 
+            var fullPackageFileStr = originalPath.relativize(filePath).toString().replace("\\", ".");
+
+            var relativePackageFileStr = !fullPackageFileStr.isEmpty() ? fullPackageFileStr.substring(0, fullPackageFileStr.lastIndexOf(".")) : "";
+
             InputStream input = new FileInputStream(filePath.toFile());
             CharStream cs = CharStreams.fromStream(input);
 
@@ -127,7 +137,9 @@ public class FluxCompiler {
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             FluxParser parser = new FluxParser(tokens);
 
-            FluxParser.ProgramContext tree = getProgramContext(parser, filePath.getFileName(), metadata);
+            var program = new Program(filePath.getFileName(), originalPath.relativize(filePath), parser.program());
+
+            FluxParser.ProgramContext tree = getProgramContext(program, metadata);
 
             if (verbose)
                 System.out.println("Successfully parsed and enriched " + filePath.getFileName());
@@ -142,8 +154,8 @@ public class FluxCompiler {
 
             Files.createDirectories(outputDirectory);
 
-            Path irPath = outputDirectory.resolve(irFilename);
-            var ir = new FluxIr<>(new IrGeneratorVisitor(), irPath.toFile());
+//            Path irPath = outputDirectory.resolve(irFilename);
+            var bytecodeGenerator = new FluxBytecodeGenerator(new IrGeneratorVisitor(), program, tree/*, irPath.toFile()*/);
 
 //            if (enablePrecompile) {
 //
@@ -176,15 +188,17 @@ public class FluxCompiler {
 //                }
 //            }
 
-            var fullPackageFileStr = originalPath.relativize(filePath).toString().replace("\\", ".");
+//            var packageName = !relativePackageFileStr.isEmpty() ? relativePackageFileStr.substring(0, relativePackageFileStr.lastIndexOf(".")) : "flux";
 
-            var relativePackageFileStr = !fullPackageFileStr.isEmpty() ? fullPackageFileStr.substring(0, fullPackageFileStr.lastIndexOf(".")) : "";
-            var packageName = !relativePackageFileStr.isEmpty() ? relativePackageFileStr.substring(0, relativePackageFileStr.lastIndexOf(".")) : "flux";
+            String fileName = filePath.getFileName().toString().split("\\.")[0];
+            for (var entry : bytecodeGenerator.generateClasses().entrySet()) {
+                String name = fileName;
+                if (!fileName.equals(entry.getKey()))
+                    name += "$" + entry.getKey();
 
-            String generatedJavaCode = "package " + packageName + ";\n" + ir.visit(tree);
-
-            String fileName = filePath.getFileName().toString().replace(".flux", ".java");
-            writeGeneratedFile(fileName, originalPath, filePath, generatedJavaCode, outputPath);
+                writeGeneratedFile(name + ".class", originalPath, filePath, entry.getValue(), outputPath);
+            }
+            System.out.println(bytecodeGenerator);
 
         } catch (IOException e) {
             System.err.println("Error processing file: " + filePath);
@@ -192,10 +206,9 @@ public class FluxCompiler {
         }
     }
 
-    private static FluxParser.ProgramContext getProgramContext(FluxParser parser, Path fileName, FluxMetadata metadata) {
-        FluxParser.ProgramContext tree = parser.program();
+    private static FluxParser.ProgramContext getProgramContext(Program program, FluxMetadata metadata) {
+        FluxParser.ProgramContext tree = program.ctx;
 
-        var program = new Program(fileName, tree);
         programRegistry.put(tree, program);
 
         if (metadata != null && metadata.imports != null) {
@@ -341,7 +354,7 @@ public class FluxCompiler {
         return meta;
     }
 
-    private static File writeGeneratedFile(String fileName, Path originalPath, Path originalFluxPath, String javaSourceCode, Path outputRoot) {
+    private static File writeGeneratedFile(String fileName, Path originalPath, Path originalFluxPath, byte[] bytecode, Path outputRoot) {
         try {
             Path relativePath = originalPath.relativize(originalFluxPath);
 
@@ -354,9 +367,9 @@ public class FluxCompiler {
 
             Path outputPath = outputDirectory.resolve(fileName);
 
-            Files.writeString(outputPath, javaSourceCode);
+            Files.write(outputPath, bytecode);
 
-            System.out.println("Generated Java file: " + outputPath);
+            System.out.println("Generated Class file: " + outputPath);
 
             return new File(outputPath.toUri());
         } catch (IOException e) {

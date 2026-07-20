@@ -325,33 +325,33 @@ public class FluxUtils {
     }
 
     public static ComplexTypeMap ctm = new ComplexTypeMap(List.of(
-            new ComplexType("bool", "boolean", "Boolean"),
-            new ComplexType("string", "String", "String"),
-            new ComplexType("char", "char", "Character"),
-            new ComplexType("float", "float", "Float"),
-            new ComplexType("int", "int", "Integer"),
-            new ComplexType("double", "double", "Double"),
-            new ComplexType("long", "long", "Long"),
-            new ComplexType("object", "Object", "Object"),
+            new ComplexType("bool", "boolean", "Boolean", "Z"),
+            new ComplexType("string", "String", "String", "Ljava/lang/String;"),
+            new ComplexType("char", "char", "Character", "C"),
+            new ComplexType("float", "float", "Float", "F"),
+            new ComplexType("int", "int", "Integer", "I"),
+            new ComplexType("double", "double", "Double", "D"),
+            new ComplexType("long", "long", "Long", "J"),
+            new ComplexType("object", "Object", "Object", "Ljava/lang/Object;"),
 
-            new ComplexType("var", "var", null),
-            new ComplexType("void", "void", null),
-            new ComplexType("function", "function", null),
+            new ComplexType("var", "var", null, null),
+            new ComplexType("void", "void", null, "()V"),
+            new ComplexType("function", "function", null, null),
 
             new ComplexType("illegal"),
             new ComplexType("unknown"),
 
-            new ComplexType("import", "import", null),
-            new ComplexType("importstatic", "static import", null),
-            new ComplexType("import static", "static import", null),
+            new ComplexType("import", "import", null, null),
+            new ComplexType("importstatic", "static import", null, null),
+            new ComplexType("import static", "static import", null, null),
 
-            new ComplexType("class", "class", null),
-            new ComplexType("library", null, null),
+            new ComplexType("class", "class", null, null),
+            new ComplexType("library", null, null, null),
 
-            new ComplexType("list", "List", "List", 1),
-            new ComplexType("array", "Array", "Array", 1),
+            new ComplexType("list", "List", "List", "Ljava/util/List;", 1),
+            new ComplexType("array", "Array", "Array", "Ljava/lang/Object;", 1),
 
-            new ComplexType("dict", "HashMap", "HashMap", 2)
+            new ComplexType("dict", "HashMap", "HashMap", "Ljava/util/HashMap;", 2)
     ));
 
     public static String convertFluxType(String type) {
@@ -373,6 +373,7 @@ public class FluxUtils {
         private final String fluxType;
         private final String javaType;
         private final String javaClassType;
+        private final String jvmType;
         public List<ComplexType> subtypes = List.of();
         public int subtypesCapacity = 0;
 
@@ -400,11 +401,20 @@ public class FluxUtils {
                 return subtypes.getFirst().getJavaClassType() + "[]";
             }
         }
+        public String getJvmType() {
+            if (!is("array")) {
+                return jvmType;
+            }
+            else {
+                return "[" + subtypes.getFirst().getJvmType();
+            }
+        }
 
         public ComplexType(ComplexType complexType, ComplexType... subtypes) {
             this.fluxType = complexType.fluxType;
             this.javaType = complexType.javaType;
             this.javaClassType = complexType.javaClassType;
+            this.jvmType = complexType.jvmType;
             this.subtypes = new ArrayList<>(){{
                 addAll(complexType.subtypes);
                 addAll(Arrays.stream(subtypes).toList());
@@ -414,6 +424,7 @@ public class FluxUtils {
             this.fluxType = complexType.fluxType;
             this.javaType = complexType.javaType;
             this.javaClassType = complexType.javaClassType;
+            this.jvmType = complexType.jvmType;
             this.subtypes = new ArrayList<>(){{
                 addAll(complexType.subtypes);
                 addAll(subtypes);
@@ -424,16 +435,19 @@ public class FluxUtils {
             this.fluxType = uniType;
             this.javaType = uniType;
             this.javaClassType = uniType;
+            this.jvmType = uniType;
         }
-        public ComplexType(String fluxType, String javaType, String javaClassType) {
+        public ComplexType(String fluxType, String javaType, String javaClassType, String jvmType) {
             this.fluxType = fluxType;
             this.javaType = javaType;
             this.javaClassType = javaClassType;
+            this.jvmType = jvmType;
         }
-        public ComplexType(String fluxType, String javaType, String javaClassType, int subtypesCapacity) {
+        public ComplexType(String fluxType, String javaType, String javaClassType, String jvmType, int subtypesCapacity) {
             this.fluxType = fluxType;
             this.javaType = javaType;
             this.javaClassType = javaClassType;
+            this.jvmType = jvmType;
             this.subtypesCapacity = subtypesCapacity;
         }
 
@@ -587,11 +601,11 @@ public class FluxUtils {
             return new ComplexType(get(fluxType), subtypes.stream().map(this::get).toList());
         }
 
-        public ComplexType of(String fluxType, String javaType, String javaClassType) {
-            return new ComplexType(fluxType, javaType, javaClassType);
+        public ComplexType of(String fluxType, String javaType, String javaClassType, String jvmType) {
+            return new ComplexType(fluxType, javaType, javaClassType, jvmType);
         }
-        public ComplexType of(String fluxType, String javaType, String javaClassType, int subtypesCapacity) {
-            return new ComplexType(fluxType, javaType, javaClassType, subtypesCapacity);
+        public ComplexType of(String fluxType, String javaType, String javaClassType, String jvmType, int subtypesCapacity) {
+            return new ComplexType(fluxType, javaType, javaClassType, jvmType, subtypesCapacity);
         }
     }
 

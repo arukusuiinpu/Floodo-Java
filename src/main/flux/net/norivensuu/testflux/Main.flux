@@ -23,7 +23,7 @@ var3 = varFunction1() // Also handles function variables
 
 var4 = "hai"
 
-private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
+public bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 
     float c = float1 + float2; float d = 3.14 // Both ';' and '\n' serve as terminators
 

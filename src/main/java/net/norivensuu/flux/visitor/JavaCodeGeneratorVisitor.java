@@ -1657,11 +1657,6 @@
 //    }
 //
 //    @Override
-//    public String visitVarDeclStatement(VarDeclStatementContext ctx) {
-//        return visitVarDecl(ctx.varDecl());
-//    }
-//
-//    @Override
 //    public String visitIfStatement(IfStatementContext ctx) {
 //        StringBuilder builderElseifString = new StringBuilder();
 //        for (int i = 1; i < ctx.expression().size(); i++) {

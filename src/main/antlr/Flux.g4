@@ -24,17 +24,21 @@ program: declaration* precompile? (declaration | statement | terminator)* EOF ;
 precompile: 'precompile' classBlock ;
 
 declaration
-    :   INDENT? ('import' | 'using') qualifiedId (wildcard=WILDCARD)? terminator? DEDENT?          # ImportDecl
-    |   INDENT? ('import' | 'using') static='static' qualifiedId (wildcard=WILDCARD)? DEDENT?      # ImportDecl
+    :   INDENT? ('import' | 'using') qualifiedId (wildcard=WILDCARD)? terminator? DEDENT?                           # ImportDecl
+    |   INDENT? ('import' | 'using') static='static' qualifiedId (wildcard=WILDCARD)? DEDENT?                       # ImportDecl
     |   INDENT? annotation* functionModifiers
-                        classWord=('class' | 'interface' | '@interface') mainClass=className ((':' | 'extends') extendsClass=className)? ((':' | 'implements') implementsClass=className)? classBlock terminator? DEDENT?       # ClassDecl
+                        classWord=('class' | 'interface' | '@interface')
+                        mainClass=className (((':' | 'extends')
+                        extendsClass=className) | ('(' (extendsClass=className)? ')'))? ((':' | 'implements')
+                        implementsClass=className)? classBlock terminator? DEDENT?                                  # ClassDecl
     |   INDENT? annotation* functionModifiers
-                        VOID ID '(' formalParameters? ')' terminator? voidBlock terminator? DEDENT?    # RunnableFunctionDecl
+                        VOID ID '(' formalParameters? ')' terminator? voidBlock terminator? DEDENT?                 # RunnableFunctionDecl
     |   INDENT? annotation* functionModifiers
                         VAR? ID '(' formalParameters? ')' terminator? returnBlock            terminator? DEDENT?    # VarFunctionDecl
     |   INDENT? annotation* functionModifiers
                         type ID '(' formalParameters? ')' terminator? returnBlock            terminator? DEDENT?    # ConsumerFunctionDecl
-    |   INDENT? variableModifiers localVarDecl terminator? DEDENT?         #VarDecl
+
+    |   INDENT? variableModifiers localVarDecl terminator? DEDENT?                                                  # VarDecl
     ;
 
 className

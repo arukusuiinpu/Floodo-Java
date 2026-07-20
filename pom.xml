@@ -76,6 +76,14 @@
       <version>0.8.4</version>
       <scope>compile</scope>
     </dependency>
+
+    <!-- Source: https://mvnrepository.com/artifact/org.ow2.asm/asm -->
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>9.10.1</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <build>
