@@ -106,7 +106,7 @@ public class FunctionIrNode extends IrNode<Void, ParserRuleContext> {
 
         mv.visitCode();
 
-//        visitChildren();
+        visitChildren();
 
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(0,0);
